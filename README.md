@@ -1,6 +1,6 @@
-# EdgeX Golang SDK
+# edgeX Golang SDK
 
-A Go SDK for interacting with the EdgeX Exchange API.
+A Go SDK for interacting with the edgeX Exchange API.
 
 ## Installation
 
@@ -50,12 +50,46 @@ func main() {
 
 The SDK currently supports the following API modules:
 
-- **Asset API**: Manage assets, withdrawals, and get coin rates
-- **Transfer API**: Handle transfers between accounts
+- **Account API**: Manage account positions, retrieve position transactions, and handle collateral transactions
+  - Get account positions
+  - Get position by contract ID
+  - Get position transaction history
+  - Get collateral transaction details
 
-For detailed examples of each API endpoint, please refer to the test files:
-- Asset API examples: [asset_test.go](test/asset/asset_test.go)
-- Transfer API examples: [transfer_test.go](test/transfer/transfer_test.go)
+- **Asset API**: Handle asset management and withdrawals
+  - Get asset orders with pagination
+  - Get coin rates
+  - Manage withdrawals (normal, cross-chain, and fast)
+  - Get withdrawal records and sign information
+  - Check withdrawable amounts
+
+- **Funding API**: Manage funding operations and account balance
+  - Handle funding transactions
+  - Manage funding accounts
+
+- **Metadata API**: Access exchange system information
+  - Get server time
+  - Get exchange metadata (trading pairs, contracts, etc.)
+
+- **Order API**: Comprehensive order management
+  - Create and cancel orders
+  - Get active orders
+  - Get order fill transactions
+  - Calculate maximum order sizes
+  - Manage order history
+
+- **Quote API**: Access market data and pricing
+  - Get multi-contract K-line data
+  - Get order book depth
+  - Access real-time market quotes
+
+- **Transfer API**: Handle asset transfers
+  - Create transfer out orders
+  - Get transfer records (in/out)
+  - Check available withdrawal amounts
+  - Manage transfer history
+
+For detailed examples of each API endpoint, please refer to the test files in the `test` directory.
 
 ## Environment Variables
 
@@ -78,7 +112,3 @@ export TEST_STARK_PRIVATE_KEY=your_stark_private_key
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Last Updated
-
-2025-01-16
