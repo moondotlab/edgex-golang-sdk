@@ -93,13 +93,12 @@ For detailed examples of each API endpoint, please refer to the test files in th
 
 ## Environment Variables
 
-For running tests, the following environment variables are required:
+For testing, the following environment variables need to be set:
 
-```bash
-export TEST_BASE_URL=https://testnet.edgex.exchange
-export TEST_ACCOUNT_ID=your_account_id
-export TEST_STARK_PRIVATE_KEY=your_stark_private_key
-```
+- `TEST_BASE_URL`: Base URL for HTTP API endpoints (e.g., "https://api-testnet.edgex.exchange")
+- `TEST_WS_BASE_URL`: Base URL for WebSocket endpoints (e.g., "wss://quote-testnet.edgex.exchange")
+- `TEST_ACCOUNT_ID`: Your account ID
+- `TEST_STARK_PRIVATE_KEY`: Your stark private key
 
 ## Contributing
 

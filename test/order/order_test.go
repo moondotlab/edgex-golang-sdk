@@ -65,7 +65,6 @@ func TestGetOrderFills(t *testing.T) {
 		if !strings.Contains(err.Error(), "json: cannot unmarshal string into Go struct field Order.data.dataList.cumFillSize of type float64") {
 			t.Fatal(err)
 		}
-		t.Skip("Skipping test due to known API response format mismatch")
 	}
 
 	if assert.NotNil(t, fills) && assert.NotNil(t, fills.Data) {
