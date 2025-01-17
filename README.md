@@ -109,6 +109,11 @@ export TEST_STARK_PRIVATE_KEY=your_stark_private_key
 4. Push to the branch (`git push origin feature/my-new-feature`)
 5. Create a new Pull Request
 
+## Todo
+1. Add websocket support
+2. Add market order support
+3. Calc order collateral based on leverage
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

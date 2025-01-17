@@ -3,9 +3,11 @@ package transfer
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/edgex-Tech/edgex-golang-sdk/sdk/transfer"
 	"github.com/edgex-Tech/edgex-golang-sdk/test"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,27 +90,59 @@ func TestCreateTransferOut(t *testing.T) {
 
 	ctx := test.GetTestContext()
 
+	// Test parameters
 	params := transfer.CreateTransferOutParams{
-		CoinId:            "1000",
-		Amount:            "1.000000",
-		ReceiverAccountId: "551109015904453258",
-		ReceiverL2Key:     "0x03eec711e360695bb44b1170057a25340303c1f16893a8def7450e44294405a8",
-		ClientTransferId:  "3877531064364166",
+		CoinId:            "1000", // Asset ID
+		Amount:            "1", // 1 unit
+		ReceiverAccountId: "542103805685137746",
+		ReceiverL2Key:     "0x046bcf2e07c20550c49986aca69f405ae4672507fae2568640d3f1d2dcf1bfeb",
 		TransferReason:    "USER_TRANSFER",
-		L2Nonce:           "2280110103",
-		L2ExpireTime:      "1735873200000",
-		L2Signature:       "0141279ec45ce1ea37b11cfa4683cfab8443bcbf8da3f066cef3e437862573f9034efe12eee1be3fc715c7b511f69e3ba32ec67a9ac89538fbb73de46fefc5e5",
+		ClientTransferId:  "test_transfer_" + time.Now().Format("20060102150405"),
 		ExtraType:         "",
 		ExtraDataJson:     "",
 	}
+
+	// Create transfer out - should auto-generate nonce, expiry, and signature
 	resp, err := client.CreateTransferOut(ctx, params)
-	jsonData, _ := json.MarshalIndent(resp, "", "  ")
-	t.Logf("Create Transfer Out: %s", string(jsonData))
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "SUCCESS", resp.GetCode())
 
+	// Log response for debugging
+	jsonData, _ := json.MarshalIndent(resp, "", "  ")
+	t.Logf("Create Transfer Out Response: %s", string(jsonData))
+
+	// Verify response
+	assert.Equal(t, "SUCCESS", resp.GetCode())
 	data := resp.GetData()
 	assert.NotNil(t, data)
 	assert.NotEmpty(t, data.GetTransferOutId())
+
+	// Get the transfer details to verify
+	getParams := transfer.GetTransferOutByIdParams{
+		TransferId: data.GetTransferOutId(),
+	}
+	getResp, err := client.GetTransferOutById(ctx, getParams)
+	assert.NoError(t, err)
+	assert.NotNil(t, getResp)
+
+	// Log transfer details for debugging
+	jsonData, _ = json.MarshalIndent(getResp, "", "  ")
+	t.Logf("Transfer Details: %s", string(jsonData))
+
+	// Verify transfer details
+	transferData := getResp.GetData()
+	assert.NotEmpty(t, transferData)
+	if len(transferData) > 0 {
+		transfer := transferData[0]
+		assert.Equal(t, params.CoinId, transfer.GetCoinId())
+		
+		// Compare amounts using decimal to handle precision correctly
+		expectedAmount, _ := decimal.NewFromString(params.Amount)
+		actualAmount, _ := decimal.NewFromString(transfer.GetAmount())
+		assert.True(t, expectedAmount.Equal(actualAmount), "Amount mismatch: expected %s, got %s", expectedAmount, actualAmount)
+		
+		assert.Equal(t, params.ReceiverAccountId, transfer.GetReceiverAccountId())
+		assert.Equal(t, "USER_TRANSFER", transfer.GetTransferReason())
+		assert.NotEmpty(t, transfer.GetL2Signature())
+	}
 }

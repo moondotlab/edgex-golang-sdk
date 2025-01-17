@@ -4,9 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
+
+	"math/big"
 
 	openapi "github.com/edgex-Tech/edgex-golang-sdk/openapi"
 	"github.com/edgex-Tech/edgex-golang-sdk/sdk/internal"
+	"github.com/shopspring/decimal"
 )
 
 // Client represents the transfer client
@@ -132,26 +137,98 @@ type CreateTransferOutParams struct {
 }
 
 // CreateTransferOut creates a new transfer out order
-func (c *Client) CreateTransferOut(ctx context.Context, params CreateTransferOutParams) (*openapi.ResultCreateTransferOut, error) {
+func (c *Client) CreateTransferOut(ctx context.Context, params CreateTransferOutParams, metadata openapi.MetaData) (*openapi.ResultCreateTransferOut, error) {
 	createTransferOutParam := openapi.CreateTransferOutParam{}
 
 	// Set account ID
-	createTransferOutParam.SetAccountId(strconv.FormatInt(c.GetAccountID(), 10))
+	accountId := strconv.FormatInt(c.GetAccountID(), 10)
+	createTransferOutParam.SetAccountId(accountId)
 
+	// Generate client transfer ID if not provided
+	if params.ClientTransferId == "" {
+		params.ClientTransferId = internal.GenerateUUID()
+	}
+
+	// Set expiration time if not provided (default to 1 hour from now)
+	if params.L2ExpireTime == "" {
+		expireTime := time.Now().Add(14 * 24 * time.Hour).UnixMilli()
+		params.L2ExpireTime = strconv.FormatInt(expireTime, 10)
+	}
+
+	// Set nonce if not provided
+	if params.L2Nonce == "" {
+		nonce := internal.CalcNonce(params.ClientTransferId)
+		params.L2Nonce = strconv.FormatInt(nonce, 10)
+	}
+
+	// Convert parameters to appropriate types for hash calculation
+	amountDm, _ := decimal.NewFromString(params.Amount)
+	amount := amountDm.Shift(6).IntPart()
+	nonce, _ := strconv.ParseInt(params.L2Nonce, 10, 64)
+	expireTime, _ := strconv.ParseInt(params.L2ExpireTime, 10, 64)
+	expireTimeUnix := expireTime / (60 * 60 * 1000) // Convert to hours
+
+	// Remove 0x prefix from receiver L2 key if present
+	receiverL2Key := strings.TrimPrefix(params.ReceiverL2Key, "0x")
+
+	// Get asset IDs from metadata
+	global := metadata.GetGlobal()
+	collateralCoin := global.GetStarkExCollateralCoin()
+	assetIDStr := collateralCoin.GetStarkExAssetId()
+	assetID, ok := new(big.Int).SetString(assetIDStr, 0)
+	if !ok {
+		return nil, fmt.Errorf("invalid asset ID format: %s", assetIDStr)
+	}
+
+	// Convert receiver L2 key to big.Int
+	receiverPublicKey, ok := new(big.Int).SetString(receiverL2Key, 16)
+	if !ok {
+		return nil, fmt.Errorf("invalid receiver L2 key format: %s", receiverL2Key)
+	}
+
+	// Get position IDs (same as account IDs)
+	senderPositionId := c.GetAccountID()
+	receiverPositionId, err := strconv.ParseInt(params.ReceiverAccountId, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid receiver account ID: %w", err)
+	}
+	feePositionId := senderPositionId // Fee position is same as sender for now
+	maxAmountFee := int64(0)
+
+	// Calculate transfer hash and sign it
+	msgHash := internal.CalcTransferHash(
+		assetID,
+		big.NewInt(0),
+		receiverPublicKey,
+		senderPositionId,
+		receiverPositionId,
+		feePositionId,
+		nonce,
+		amount,
+		maxAmountFee,
+		expireTimeUnix,
+	)
+	signature, err := c.Sign(msgHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign transfer hash: %w", err)
+	}
+
+	// Set all parameters
 	createTransferOutParam.SetCoinId(params.CoinId)
-	createTransferOutParam.SetAmount(params.Amount)
+	createTransferOutParam.SetAmount(amountDm.String())
 	createTransferOutParam.SetReceiverAccountId(params.ReceiverAccountId)
 	createTransferOutParam.SetReceiverL2Key(params.ReceiverL2Key)
 	createTransferOutParam.SetClientTransferId(params.ClientTransferId)
 	createTransferOutParam.SetTransferReason(params.TransferReason)
 	createTransferOutParam.SetL2Nonce(params.L2Nonce)
 	createTransferOutParam.SetL2ExpireTime(params.L2ExpireTime)
-	createTransferOutParam.SetL2Signature(params.L2Signature)
+	createTransferOutParam.SetL2Signature(fmt.Sprintf("%s%s%s", signature.R, signature.S, signature.V))
 	createTransferOutParam.SetExtraType(params.ExtraType)
 	createTransferOutParam.SetExtraDataJson(params.ExtraDataJson)
 
-	req := c.openapiClient.Class07TransferPrivateApiAPI.CreateTransferOut(ctx).
-		CreateTransferOutParam(createTransferOutParam)
+	// Execute the request
+	req := c.openapiClient.Class07TransferPrivateApiAPI.CreateTransferOut(ctx)
+	req = req.CreateTransferOutParam(createTransferOutParam)
 
 	resp, _, err := req.Execute()
 	if err != nil {

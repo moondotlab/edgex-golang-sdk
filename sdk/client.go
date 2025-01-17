@@ -282,7 +282,13 @@ func (c *Client) GetWithdrawAvailableAmount(ctx context.Context, params transfer
 
 // CreateTransferOut creates a new transfer out order
 func (c *Client) CreateTransferOut(ctx context.Context, params transfer.CreateTransferOutParams) (*openapi.ResultCreateTransferOut, error) {
-	return c.Transfer.CreateTransferOut(ctx, params)
+		// Get metadata first
+		metadata, err := c.GetMetaData(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get metadata: %w", err)
+		}
+	
+	return c.Transfer.CreateTransferOut(ctx, params, metadata.GetData())
 }
 
 // UpdateLeverageSetting updates the account leverage settings

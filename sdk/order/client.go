@@ -75,7 +75,20 @@ func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, met
 	valueDm := price.Mul(size)
 	amountSynthetic := size.Mul(resolution).IntPart()
 	amountCollateral := valueDm.Shift(6).IntPart()
-	amountFee := int64(0) // Fee is 0 for now
+
+	// Calculate fee based on order type (maker/taker)
+	feeRate, err := decimal.NewFromString(contract.GetDefaultTakerFeeRate())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse fee rate: %w", err)
+	}
+	
+	// Calculate fee amount in decimal with 6 decimal places
+	amountFeeDm := valueDm.Mul(feeRate).Round(6)
+	amountFeeStr := amountFeeDm.String()
+	
+	// Convert to the required integer format for the protocol
+	amountFee := amountFeeDm.Shift(6).IntPart()
+
 	nonce := internal.CalcNonce(clientOrderId)
 	l2ExpireTime := time.Now().Add(14 * 24 * time.Hour).UnixMilli()
 
@@ -109,7 +122,6 @@ func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, met
 	l2ExpireTimeStr := strconv.FormatInt(l2ExpireTime, 10)
 	expireTimeStr := strconv.FormatInt(l2ExpireTime-864000000, 10)
 	valueStr := valueDm.String()
-	amountFeeStr := strconv.FormatInt(amountFee, 10)
 
 	req := c.openapiClient.Class04OrderPrivateApiAPI.CreateOrder(ctx).
 		CreateOrderParam(openapi.CreateOrderParam{

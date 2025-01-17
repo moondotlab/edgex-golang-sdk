@@ -97,6 +97,46 @@ func CalcLimitOrderHash(assetIdSynthetic, assetIdCollateral, assetIdFee string, 
 	return msg
 }
 
+// CalcTransferHash calculates the hash for a transfer
+func CalcTransferHash(assetID, assetIdFee, receiverPublicKey *big.Int, senderPositionId, receiverPositionId, feePositionId, nonce, amount, maxAmountFee, expirationTimestamp int64) []byte {
+	assetIDInt := big.NewInt(0).Set(assetID)
+	assetIdFeeInt := big.NewInt(0).Set(assetIdFee)
+	msg := starkcurve.CalcHash([]*big.Int{assetIDInt, assetIdFeeInt})
+
+	receiverPublicKeyInt := big.NewInt(0).Set(receiverPublicKey)
+	msgInt := big.NewInt(0).SetBytes(msg)
+	msg = starkcurve.CalcHash([]*big.Int{msgInt, receiverPublicKeyInt})
+
+	packedMsg0 := big.NewInt(senderPositionId)
+	packedMsg0 = packedMsg0.Lsh(packedMsg0, 64)
+	receiverPositionIdInt := big.NewInt(receiverPositionId)
+	packedMsg0 = packedMsg0.Add(packedMsg0, receiverPositionIdInt)
+	feePositionIdInt := big.NewInt(feePositionId)
+	packedMsg0 = packedMsg0.Lsh(packedMsg0, 64)
+	packedMsg0 = packedMsg0.Add(packedMsg0, feePositionIdInt)
+	nonceInt := big.NewInt(nonce)
+	packedMsg0 = packedMsg0.Lsh(packedMsg0, 32)
+	packedMsg0 = packedMsg0.Add(packedMsg0, nonceInt)
+	msgInt = big.NewInt(0).SetBytes(msg)
+	msg = starkcurve.CalcHash([]*big.Int{msgInt, packedMsg0})
+
+	packedMsg1 := big.NewInt(4)
+	packedMsg1 = packedMsg1.Lsh(packedMsg1, 64)
+	amountInt := big.NewInt(amount)
+	packedMsg1 = packedMsg1.Add(packedMsg1, amountInt)
+	packedMsg1 = packedMsg1.Lsh(packedMsg1, 64)
+	maxAmountFeeInt := big.NewInt(maxAmountFee)
+	packedMsg1 = packedMsg1.Add(packedMsg1, maxAmountFeeInt)
+	expirationTimestampInt := big.NewInt(expirationTimestamp)
+	packedMsg1 = packedMsg1.Lsh(packedMsg1, 32)
+	packedMsg1 = packedMsg1.Add(packedMsg1, expirationTimestampInt)
+	packedMsg1 = packedMsg1.Lsh(packedMsg1, 81)
+	msgInt = big.NewInt(0).SetBytes(msg)
+	msg = starkcurve.CalcHash([]*big.Int{msgInt, packedMsg1})
+
+	return msg
+}
+
 // JoinStrings joins a slice of strings with commas
 func JoinStrings(strs []string) string {
 	return strings.Join(strs, ",")

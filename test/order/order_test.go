@@ -3,7 +3,6 @@ package order
 import (
 	"encoding/json"
 	"testing"
-
 	"strings"
 
 	"github.com/edgex-Tech/edgex-golang-sdk/sdk/order"
@@ -87,6 +86,7 @@ func TestCreateAndCancelOrder(t *testing.T) {
 	ctx := test.GetTestContext()
 	contractID := "10000001" // BTCUSDT
 	price := decimal.NewFromFloat(90000.1)
+	size := decimal.NewFromFloat(0.001)  // Adjusted to match stepSize
 
 	// First get metadata
 	metadata, err := client.GetMetaData(ctx)
@@ -97,7 +97,7 @@ func TestCreateAndCancelOrder(t *testing.T) {
 	orderParams := &order.CreateOrderParams{
 		ContractId:  contractID,
 		Price:       price.String(),
-		Size:        "0.01", // BTC size
+		Size:        size.String(),
 		Type:        "LIMIT",
 		Side:        "BUY",
 		TimeInForce: "GOOD_TIL_CANCEL",
