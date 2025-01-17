@@ -129,11 +129,6 @@ type CreateTransferOutParams struct {
 	ReceiverL2Key     string
 	ClientTransferId  string
 	TransferReason    string
-	L2Nonce           string
-	L2ExpireTime      string
-	L2Signature       string
-	ExtraType         string
-	ExtraDataJson     string
 }
 
 // CreateTransferOut creates a new transfer out order
@@ -149,23 +144,13 @@ func (c *Client) CreateTransferOut(ctx context.Context, params CreateTransferOut
 		params.ClientTransferId = internal.GenerateUUID()
 	}
 
-	// Set expiration time if not provided (default to 1 hour from now)
-	if params.L2ExpireTime == "" {
-		expireTime := time.Now().Add(14 * 24 * time.Hour).UnixMilli()
-		params.L2ExpireTime = strconv.FormatInt(expireTime, 10)
-	}
-
-	// Set nonce if not provided
-	if params.L2Nonce == "" {
-		nonce := internal.CalcNonce(params.ClientTransferId)
-		params.L2Nonce = strconv.FormatInt(nonce, 10)
-	}
+	l2ExpireTime := strconv.FormatInt(time.Now().Add(14*24*time.Hour).UnixMilli(), 10)
 
 	// Convert parameters to appropriate types for hash calculation
 	amountDm, _ := decimal.NewFromString(params.Amount)
 	amount := amountDm.Shift(6).IntPart()
-	nonce, _ := strconv.ParseInt(params.L2Nonce, 10, 64)
-	expireTime, _ := strconv.ParseInt(params.L2ExpireTime, 10, 64)
+	nonce := internal.CalcNonce(params.ClientTransferId)
+	expireTime, _ := strconv.ParseInt(l2ExpireTime, 10, 64)
 	expireTimeUnix := expireTime / (60 * 60 * 1000) // Convert to hours
 
 	// Remove 0x prefix from receiver L2 key if present
@@ -220,11 +205,9 @@ func (c *Client) CreateTransferOut(ctx context.Context, params CreateTransferOut
 	createTransferOutParam.SetReceiverL2Key(params.ReceiverL2Key)
 	createTransferOutParam.SetClientTransferId(params.ClientTransferId)
 	createTransferOutParam.SetTransferReason(params.TransferReason)
-	createTransferOutParam.SetL2Nonce(params.L2Nonce)
-	createTransferOutParam.SetL2ExpireTime(params.L2ExpireTime)
+	createTransferOutParam.SetL2Nonce(strconv.FormatInt(nonce, 10))
+	createTransferOutParam.SetL2ExpireTime(l2ExpireTime)
 	createTransferOutParam.SetL2Signature(fmt.Sprintf("%s%s%s", signature.R, signature.S, signature.V))
-	createTransferOutParam.SetExtraType(params.ExtraType)
-	createTransferOutParam.SetExtraDataJson(params.ExtraDataJson)
 
 	// Execute the request
 	req := c.openapiClient.Class07TransferPrivateApiAPI.CreateTransferOut(ctx)

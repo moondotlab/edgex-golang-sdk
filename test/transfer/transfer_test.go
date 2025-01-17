@@ -3,7 +3,6 @@ package transfer
 import (
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/edgex-Tech/edgex-golang-sdk/sdk/transfer"
 	"github.com/edgex-Tech/edgex-golang-sdk/test"
@@ -97,9 +96,6 @@ func TestCreateTransferOut(t *testing.T) {
 		ReceiverAccountId: "542103805685137746",
 		ReceiverL2Key:     "0x046bcf2e07c20550c49986aca69f405ae4672507fae2568640d3f1d2dcf1bfeb",
 		TransferReason:    "USER_TRANSFER",
-		ClientTransferId:  "test_transfer_" + time.Now().Format("20060102150405"),
-		ExtraType:         "",
-		ExtraDataJson:     "",
 	}
 
 	// Create transfer out - should auto-generate nonce, expiry, and signature
