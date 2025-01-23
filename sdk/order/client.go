@@ -28,6 +28,16 @@ func NewClient(client *internal.Client, openapiClient *openapi.APIClient) *Clien
 
 // CreateOrder creates a new order with the given parameters
 func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, metadata openapi.MetaData) (*openapi.ResultCreateOrder, error) {
+	// Set default TimeInForce based on order type if not specified
+	if params.TimeInForce == "" {
+		switch params.Type {
+		case OrderTypeMarket:
+			params.TimeInForce = string(TimeInForce_IMMEDIATE_OR_CANCEL)
+		case OrderTypeLimit:
+			params.TimeInForce = string(TimeInForce_GOOD_TIL_CANCEL)
+		}
+	}
+
 	// Find the contract from metadata
 	var contract *openapi.Contract
 	contractList := metadata.GetContractList()
@@ -124,13 +134,20 @@ func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, met
 	expireTimeStr := strconv.FormatInt(l2ExpireTime-864000000, 10)
 	valueStr := valueDm.String()
 
+	var price_ string
+	if string(params.Type) == string(OrderTypeLimit) {
+		price_ = params.Price
+	} else {
+		price_ = "0"
+	}
+
 	req := c.openapiClient.Class04OrderPrivateApiAPI.CreateOrder(ctx).
 		CreateOrderParam(openapi.CreateOrderParam{
 			AccountId:     &accountID,
 			ContractId:    &params.ContractId,
-			Price:         &params.Price,
+			Price:         &price_,
 			Size:          &params.Size,
-			Type:          &params.Type,
+			Type:          (*string)(&params.Type),  
 			TimeInForce:   &params.TimeInForce,
 			Side:          &params.Side,
 			L2Signature:   &sigStr,

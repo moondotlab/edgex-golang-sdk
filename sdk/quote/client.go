@@ -42,9 +42,9 @@ func (c *Client) GetQuoteSummary(ctx context.Context, contractID string) (*opena
 }
 
 // Get24HourQuotes gets the 24-hour quotes for given contracts
-func (c *Client) Get24HourQuotes(ctx context.Context, contractIDs []string) (*openapi.ResultListTicker, error) {
+func (c *Client) Get24HourQuote(ctx context.Context, contractId string) (*openapi.ResultListTicker, error) {
 	resp, _, err := c.openapiClient.Class01QuotePublicApiAPI.GetTicker(ctx).
-		ContractId(contractIDs[0]). // API only supports one contract ID
+		ContractId(contractId). // API only supports one contract ID
 		Execute()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get 24-hour quotes: %w", err)

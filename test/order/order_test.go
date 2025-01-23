@@ -5,6 +5,7 @@ import (
 	"testing"
 	"strings"
 
+	"github.com/edgex-Tech/edgex-golang-sdk/openapi"
 	"github.com/edgex-Tech/edgex-golang-sdk/sdk/order"
 	"github.com/edgex-Tech/edgex-golang-sdk/test"
 	"github.com/shopspring/decimal"
@@ -112,13 +113,63 @@ func TestCreateAndCancelOrder(t *testing.T) {
 		assert.NotEmpty(t, orderID)
 
 		// Cancel the created order
-		// cancelResp, err := client.CancelOrder(ctx, &order.CancelOrderParams{
-		// 	OrderId: orderID,
-		// })
-		// jsonData2, _ := json.MarshalIndent(cancelResp, "", "  ")
-		// t.Logf("Cancel Order Result: %s", string(jsonData2))
+		cancelResp, err := client.CancelOrder(ctx, &order.CancelOrderParams{
+			OrderId: orderID,
+		})
+		jsonData2, _ := json.MarshalIndent(cancelResp, "", "  ")
+		t.Logf("Cancel Order Result: %s", string(jsonData2))
 
-		// assert.NoError(t, err)
-		// assert.NotNil(t, cancelResp)
+		assert.NoError(t, err)
+		assert.NotNil(t, cancelResp)
 	}
+}
+
+func TestCreateMarketOrder(t *testing.T) {
+	client, err := test.CreateTestClient()
+	assert.NoError(t, err)
+
+	ctx := test.GetTestContext()
+	contractID := "10000001" // BTCUSDT
+	size := "0.001"
+
+	// Get metadata to verify price calculation
+	metadata, err := client.GetMetaData(ctx)
+	assert.NoError(t, err)
+
+	var contract *openapi.Contract
+	for _, c := range metadata.Data.ContractList {
+		if *c.ContractId == contractID {
+			contract = &c
+			break
+		}
+	}
+	assert.NotNil(t, contract, "Contract should be found")
+
+	t.Run("Market Buy Order", func(t *testing.T) {
+		// Create market buy order
+		result, err := client.CreateMarketOrder(ctx, contractID, size, order.OrderSideBuy, nil)
+		jsonData, _ := json.MarshalIndent(result, "", "  ")
+		t.Logf("Created Market Buy Order: %s", string(jsonData))
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+
+		if assert.NotNil(t, result.Data) {
+			assert.NotEmpty(t, result.Data.GetOrderId())
+		}
+	})
+
+	t.Run("Market Sell Order", func(t *testing.T) {
+		// Create market sell order
+		result, err := client.CreateMarketOrder(ctx, contractID, size, order.OrderSideSell, nil)
+		jsonData, _ := json.MarshalIndent(result, "", "  ")
+		t.Logf("Created Market Sell Order: %s", string(jsonData))
+
+		assert.NoError(t, err)
+		assert.NotNil(t, result)
+
+		if assert.NotNil(t, result.Data) {
+			assert.NotEmpty(t, result.Data.GetOrderId())
+		}
+	})
 }

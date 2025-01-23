@@ -109,9 +109,7 @@ For testing, the following environment variables need to be set:
 5. Create a new Pull Request
 
 ## Todo
-1. Add websocket support
-2. Add market order support
-3. Calc order collateral based on leverage
+1. Add market order support
 
 ## License
 

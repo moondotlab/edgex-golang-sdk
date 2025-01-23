@@ -246,8 +246,8 @@ func (c *Client) GetQuoteSummary(ctx context.Context, contractID string) (*opena
 }
 
 // Get24HourQuotes gets the 24-hour quotes for given contracts
-func (c *Client) Get24HourQuotes(ctx context.Context, contractIDs []string) (*openapi.ResultListTicker, error) {
-	return c.Quote.Get24HourQuotes(ctx, contractIDs)
+func (c *Client) Get24HourQuote(ctx context.Context, contractId string) (*openapi.ResultListTicker, error) {
+	return c.Quote.Get24HourQuote(ctx, contractId)
 }
 
 // GetKLine gets the K-line data for a contract
@@ -282,16 +282,85 @@ func (c *Client) GetWithdrawAvailableAmount(ctx context.Context, params transfer
 
 // CreateTransferOut creates a new transfer out order
 func (c *Client) CreateTransferOut(ctx context.Context, params transfer.CreateTransferOutParams) (*openapi.ResultCreateTransferOut, error) {
-		// Get metadata first
-		metadata, err := c.GetMetaData(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get metadata: %w", err)
-		}
-	
+	// Get metadata first
+	metadata, err := c.GetMetaData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metadata: %w", err)
+	}
+
 	return c.Transfer.CreateTransferOut(ctx, params, metadata.GetData())
 }
 
 // UpdateLeverageSetting updates the account leverage settings
 func (c *Client) UpdateLeverageSetting(ctx context.Context, contractID string, leverage string) error {
 	return c.Account.UpdateLeverageSetting(ctx, contractID, leverage)
+}
+
+// CreateLimitOrder creates a new limit order with the given parameters
+func (c *Client) CreateLimitOrder(ctx context.Context, contractId, size, price, side string, clientOrderId *string) (*openapi.ResultCreateOrder, error) {
+	params := &order.CreateOrderParams{
+		ContractId:    contractId,
+		Size:          size,
+		Price:         price,
+		Side:          side,
+		Type:          order.OrderTypeLimit,
+		ClientOrderId: clientOrderId,
+	}
+	return c.CreateOrder(ctx, params)
+}
+
+// CreateMarketOrder creates a new market order with the given parameters
+func (c *Client) CreateMarketOrder(ctx context.Context, contractId, size, side string, clientOrderId *string) (*openapi.ResultCreateOrder, error) {
+	// Get metadata for contract info
+	metadata, err := c.GetMetaData(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get metadata: %w", err)
+	}
+
+	// Find the contract
+	var contract *openapi.Contract
+	contractList := metadata.Data.ContractList
+	for _, c := range contractList {
+		if *c.ContractId == contractId {
+			contract = &c
+			break
+		}
+	}
+	if contract == nil {
+		return nil, fmt.Errorf("contract not found: %s", contractId)
+	}
+
+	// Calculate price based on side
+	var price string
+	if side == order.OrderSideBuy {
+		// For buy orders: oracle_price * 10, rounded to price precision
+		quote, err := c.Get24HourQuote(ctx, contractId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get 24-hour quotes: %w", err)
+		}
+		oraclePrice, err := decimal.NewFromString(quote.GetData()[0].GetOraclePrice())
+		if err != nil {
+			return nil, fmt.Errorf("invalid oracle price: %s", quote.GetData()[0].GetOraclePrice())
+		}
+		multiplier := decimal.NewFromInt(10)
+		tickSize, err := decimal.NewFromString(*contract.TickSize)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tick size: %s", *contract.TickSize)
+		}
+		precision := int32(tickSize.Exponent())
+		price = oraclePrice.Mul(multiplier).Round(precision).String()
+	} else {
+		// For sell orders: use tick size
+		price = *contract.TickSize
+	}
+
+	params := &order.CreateOrderParams{
+		ContractId:    contractId,
+		Size:          size,
+		Price:         price,
+		Side:          side,
+		Type:          order.OrderTypeMarket,
+		ClientOrderId: clientOrderId,
+	}
+	return c.CreateOrder(ctx, params)
 }

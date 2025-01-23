@@ -22,6 +22,19 @@ const (
 	ResponseCodeSuccess = "SUCCESS"
 )
 
+// OrderType represents the type of order
+type OrderType string
+
+const (
+	OrderTypeUnknown           OrderType = "UNKNOWN_ORDER_TYPE"
+	OrderTypeLimit             OrderType = "LIMIT"            
+	OrderTypeMarket            OrderType = "MARKET"           
+	OrderTypeStopLimit         OrderType = "STOP_LIMIT"        
+	OrderTypeStopMarket        OrderType = "STOP_MARKET"       
+	OrderTypeTakeProfitLimit   OrderType = "TAKE_PROFIT_LIMIT"  
+	OrderTypeTakeProfitMarket  OrderType = "TAKE_PROFIT_MARKET" 
+)
+
 // Common filter types used across different order APIs
 type OrderFilterParams struct {
 	FilterCoinIdList     []string // Filter by coin IDs, empty means all coins
@@ -72,14 +85,14 @@ type GetHistoryOrderParams struct {
 
 // CreateOrderParams represents parameters for creating an order
 type CreateOrderParams struct {
-	ContractId    string  // Contract ID
-	Price         string  // Order price
-	Size          string  // Order size
-	Type          string  // Order type
-	Side          string  // Order side (buy/sell)
-	ClientOrderId *string // Optional client order ID
-	L2ExpireTime  *int64  // Optional L2 expire time
-	TimeInForce   string  // Optional time in force
+	ContractId    string    `json:"contractId"`
+	Price         string    `json:"price"`
+	Size          string    `json:"size"`
+	Type          OrderType `json:"type"`
+	Side          string    `json:"side"`
+	ClientOrderId *string   `json:"clientOrderId,omitempty"`
+	L2ExpireTime  *int64    `json:"l2ExpireTime,omitempty"`
+	TimeInForce   string    `json:"timeInForce,omitempty"`
 }
 
 // CancelOrderParams represents parameters for canceling orders

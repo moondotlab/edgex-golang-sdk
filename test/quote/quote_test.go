@@ -33,7 +33,7 @@ func TestGet24HourQuotes(t *testing.T) {
 
 	ctx := test.GetTestContext()
 
-	resp, err := client.Get24HourQuotes(ctx, []string{"10000002"})
+	resp, err := client.Get24HourQuote(ctx, "10000002")
 	jsonData, _ := json.MarshalIndent(resp, "", "  ")
 	t.Logf("24-Hour Quotes: %s", string(jsonData))
 	assert.NoError(t, err)
