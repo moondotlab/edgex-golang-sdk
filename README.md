@@ -108,9 +108,6 @@ For testing, the following environment variables need to be set:
 4. Push to the branch (`git push origin feature/my-new-feature`)
 5. Create a new Pull Request
 
-## Todo
-1. Add market order support
-
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
