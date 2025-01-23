@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edgex-Tech/edgex-starkcurve"
+	"github.com/edgex-Tech/edgex-golang-sdk/starkcurve"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/sha3"
 )

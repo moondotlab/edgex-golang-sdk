@@ -3,8 +3,6 @@ module github.com/edgex-Tech/edgex-golang-sdk
 go 1.22.7
 
 require (
-	github.com/edgex-Tech/edgex-protos v0.0.0-20241211025847-bb3f7388e287
-	github.com/edgex-Tech/edgex-starkcurve v0.0.0-20240603144345-a2a047b72d54
 	github.com/ethereum/go-ethereum v1.14.12
 	github.com/google/uuid v1.6.0
 	github.com/shopspring/decimal v1.4.0
