@@ -28,11 +28,6 @@ func NewClient(client *internal.Client, openapiClient *openapi.APIClient) *Clien
 
 // CreateOrder creates a new order with the given parameters
 func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, metadata openapi.MetaData) (*openapi.ResultCreateOrder, error) {
-	// Set default resolution if not provided
-	if params.Resolution == "" {
-		params.Resolution = DefaultResolution
-	}
-
 	// Find the contract from metadata
 	var contract *openapi.Contract
 	contractList := metadata.GetContractList()
@@ -61,10 +56,16 @@ func (c *Client) CreateOrder(ctx context.Context, params *CreateOrderParams, met
 		return nil, fmt.Errorf("failed to parse price: %w", err)
 	}
 
-	resolution, err := decimal.NewFromString(params.Resolution)
+	// Convert hex resolution to decimal
+	hexResolution := contract.GetStarkExResolution()
+	// Remove "0x" prefix if present
+	hexResolution = strings.TrimPrefix(hexResolution, "0x")
+	// Parse hex string to int64
+	resolutionInt, err := strconv.ParseInt(hexResolution, 16, 64)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse resolution: %w", err)
+		return nil, fmt.Errorf("failed to parse hex resolution: %w", err)
 	}
+	resolution := decimal.NewFromInt(resolutionInt)
 
 	clientOrderId := internal.GenerateUUID()
 	if params.ClientOrderId != nil {

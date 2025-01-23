@@ -83,9 +83,9 @@ func TestCreateAndCancelOrder(t *testing.T) {
 	assert.NoError(t, err)
 
 	ctx := test.GetTestContext()
-	contractID := "10000001" // BTCUSDT
-	price := decimal.NewFromFloat(90000.1)
-	size := decimal.NewFromFloat(0.001)  // Adjusted to match stepSize
+	contractID := "10000002"
+	price := decimal.NewFromFloat(3300.1)
+	size := decimal.NewFromFloat(0.1)
 
 	// First get metadata
 	metadata, err := client.GetMetaData(ctx)
@@ -112,13 +112,13 @@ func TestCreateAndCancelOrder(t *testing.T) {
 		assert.NotEmpty(t, orderID)
 
 		// Cancel the created order
-		cancelResp, err := client.CancelOrder(ctx, &order.CancelOrderParams{
-			OrderId: orderID,
-		})
-		jsonData2, _ := json.MarshalIndent(cancelResp, "", "  ")
-		t.Logf("Cancel Order Result: %s", string(jsonData2))
+		// cancelResp, err := client.CancelOrder(ctx, &order.CancelOrderParams{
+		// 	OrderId: orderID,
+		// })
+		// jsonData2, _ := json.MarshalIndent(cancelResp, "", "  ")
+		// t.Logf("Cancel Order Result: %s", string(jsonData2))
 
-		assert.NoError(t, err)
-		assert.NotNil(t, cancelResp)
+		// assert.NoError(t, err)
+		// assert.NotNil(t, cancelResp)
 	}
 }

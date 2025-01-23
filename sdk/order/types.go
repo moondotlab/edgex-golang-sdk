@@ -22,11 +22,6 @@ const (
 	ResponseCodeSuccess = "SUCCESS"
 )
 
-// Default value constants
-const (
-	DefaultResolution = "10000000000"
-)
-
 // Common filter types used across different order APIs
 type OrderFilterParams struct {
 	FilterCoinIdList     []string // Filter by coin IDs, empty means all coins
@@ -82,7 +77,6 @@ type CreateOrderParams struct {
 	Size          string  // Order size
 	Type          string  // Order type
 	Side          string  // Order side (buy/sell)
-	Resolution    string  // Resolution, defaults to "10000000000"
 	ClientOrderId *string // Optional client order ID
 	L2ExpireTime  *int64  // Optional L2 expire time
 	TimeInForce   string  // Optional time in force

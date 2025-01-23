@@ -38,6 +38,7 @@ func CalcLimitOrderHash(assetIdSynthetic, assetIdCollateral, assetIdFee string, 
 	if len(assetIdFee) > 2 && assetIdFee[:2] == "0x" {
 		assetIdFee = assetIdFee[2:]
 	}
+
 	var asset_id_sell *big.Int
 	var asset_id_buy *big.Int
 	var amount_sell, amount_buy *big.Int
