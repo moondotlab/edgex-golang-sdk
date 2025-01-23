@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -145,6 +146,17 @@ func (c *Client) Close() error {
 	return nil
 }
 
+// QuoteEvent represents a quote event message
+type QuoteEvent struct {
+	Type    string `json:"type"`
+	Channel string `json:"channel"`
+	Content struct {
+		Channel  string          `json:"channel"`
+		DataType string          `json:"dataType"`
+		Data     json.RawMessage `json:"data"`
+	} `json:"content"`
+}
+
 // handleMessages processes incoming WebSocket messages
 func (c *Client) handleMessages() {
 	for {
@@ -184,7 +196,22 @@ func (c *Client) handleMessages() {
 				continue
 			}
 
-			// Call registered handlers
+			// Handle quote events
+			if msg.Type == "quote-event" {
+				var quoteEvent QuoteEvent
+				if err := json.Unmarshal(message, &quoteEvent); err != nil {
+					continue
+				}
+
+				// Extract channel type from channel string (e.g., "ticker" from "ticker.10000001")
+				channelType := strings.Split(quoteEvent.Channel, ".")[0]
+				if handler, ok := c.handlers[channelType]; ok {
+					handler(message)
+				}
+				continue
+			}
+
+			// Call registered handlers for other message types
 			if handler, ok := c.handlers[msg.Type]; ok {
 				handler(message)
 			}
@@ -236,11 +263,8 @@ func (c *Client) Subscribe(topic string, params map[string]interface{}) error {
 	}
 
 	subMsg := map[string]interface{}{
-		"type": "subscribe",
-		"data": map[string]interface{}{
-			"type":   topic,
-			"params": params,
-		},
+		"type":    "subscribe",
+		"channel": topic,
 	}
 
 	if err := c.sendMessage(subMsg); err != nil {
@@ -261,10 +285,8 @@ func (c *Client) Unsubscribe(topic string) error {
 	}
 
 	unsubMsg := map[string]interface{}{
-		"type": "unsubscribe",
-		"data": map[string]interface{}{
-			"type": topic,
-		},
+		"type":    "unsubscribe",
+		"channel": topic,
 	}
 
 	if err := c.sendMessage(unsubMsg); err != nil {
@@ -283,6 +305,13 @@ func (c *Client) OnMessage(msgType string, handler MessageHandler) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.handlers[msgType] = handler
+}
+
+// OnMessageHook registers a hook that will be called for all messages
+func (c *Client) OnMessageHook(hook MessageHandler) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.onMessageHooks = append(c.onMessageHooks, hook)
 }
 
 // OnConnect registers a hook that will be called when connection is established

@@ -64,7 +64,7 @@ func (m *Manager) ConnectPrivate(ctx context.Context) error {
 }
 
 // SubscribeMarketTicker subscribes to 24-hour market ticker updates
-func (m *Manager) SubscribeMarketTicker(symbol string, handler MessageHandler) error {
+func (m *Manager) SubscribeMarketTicker(contractID string, handler MessageHandler) error {
 	m.mu.RLock()
 	client := m.publicClient
 	m.mu.RUnlock()
@@ -74,13 +74,11 @@ func (m *Manager) SubscribeMarketTicker(symbol string, handler MessageHandler) e
 	}
 
 	client.OnMessage("ticker", handler)
-	return client.Subscribe("ticker", map[string]interface{}{
-		"symbol": symbol,
-	})
+	return client.Subscribe(fmt.Sprintf("ticker.%s", contractID), nil)
 }
 
 // SubscribeKLine subscribes to K-line (candlestick) data
-func (m *Manager) SubscribeKLine(symbol string, interval string, handler MessageHandler) error {
+func (m *Manager) SubscribeKLine(contractID string, interval string, handler MessageHandler) error {
 	m.mu.RLock()
 	client := m.publicClient
 	m.mu.RUnlock()
@@ -90,14 +88,11 @@ func (m *Manager) SubscribeKLine(symbol string, interval string, handler Message
 	}
 
 	client.OnMessage("kline", handler)
-	return client.Subscribe("kline", map[string]interface{}{
-		"symbol":   symbol,
-		"interval": interval,
-	})
+	return client.Subscribe(fmt.Sprintf("kline.LAST_PRICE.%s.%s", contractID, interval), nil)
 }
 
-// SubscribeOrderBook subscribes to order book updates
-func (m *Manager) SubscribeOrderBook(symbol string, handler MessageHandler) error {
+// SubscribeDepth subscribes to market depth updates
+func (m *Manager) SubscribeDepth(contractID string, handler MessageHandler) error {
 	m.mu.RLock()
 	client := m.publicClient
 	m.mu.RUnlock()
@@ -106,14 +101,12 @@ func (m *Manager) SubscribeOrderBook(symbol string, handler MessageHandler) erro
 		return fmt.Errorf("public WebSocket connection not established")
 	}
 
-	client.OnMessage("orderbook", handler)
-	return client.Subscribe("orderbook", map[string]interface{}{
-		"symbol": symbol,
-	})
+	client.OnMessage("depth", handler)
+	return client.Subscribe(fmt.Sprintf("depth.%s.15", contractID), nil)
 }
 
 // SubscribeTrades subscribes to latest trades
-func (m *Manager) SubscribeTrades(symbol string, handler MessageHandler) error {
+func (m *Manager) SubscribeTrades(contractID string, handler MessageHandler) error {
 	m.mu.RLock()
 	client := m.publicClient
 	m.mu.RUnlock()
@@ -123,9 +116,7 @@ func (m *Manager) SubscribeTrades(symbol string, handler MessageHandler) error {
 	}
 
 	client.OnMessage("trades", handler)
-	return client.Subscribe("trades", map[string]interface{}{
-		"symbol": symbol,
-	})
+	return client.Subscribe(fmt.Sprintf("trades.%s", contractID), nil)
 }
 
 // OnPrivateMessage registers a handler for private WebSocket messages
@@ -139,6 +130,20 @@ func (m *Manager) OnPrivateMessage(msgType string, handler MessageHandler) error
 	}
 
 	client.OnMessage(msgType, handler)
+	return nil
+}
+
+// OnPublicMessage registers a handler for all public WebSocket messages
+func (m *Manager) OnPublicMessage(handler MessageHandler) error {
+	m.mu.RLock()
+	client := m.publicClient
+	m.mu.RUnlock()
+
+	if client == nil {
+		return fmt.Errorf("public WebSocket connection not established")
+	}
+
+	client.OnMessageHook(handler)
 	return nil
 }
 

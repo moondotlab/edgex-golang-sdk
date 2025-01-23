@@ -23,30 +23,100 @@ func TestWebSocket(t *testing.T) {
 	// Connect to public WebSocket
 	err := manager.ConnectPublic(ctx)
 	if err != nil {
-		t.Logf("Failed to connect to public WebSocket: %v", err)
+		t.Fatalf("Failed to connect to public WebSocket: %v", err)
 	}
 
-	// Subscribe to market ticker
-	done := make(chan struct{})
-	err = manager.SubscribeMarketTicker("BTC-USDT", func(message []byte) {
-		var msg map[string]interface{}
-		err := json.Unmarshal(message, &msg)
-		if err != nil {
-			t.Logf("Failed to unmarshal message: %v", err)
-			return
-		}
-		t.Logf("Received ticker message: %v", msg)
-		close(done)
+	contractID := "10000001" // BTCUSDT
+
+	// Create channels to track message receipt
+	tickerMsgCh := make(chan struct{})
+	klineMsgCh := make(chan struct{})
+	depthMsgCh := make(chan struct{})
+	tradesMsgCh := make(chan struct{})
+
+	// Add a debug hook to log all messages
+	manager.OnPublicMessage(func(message []byte) {
+		t.Logf("Raw message received: %s", string(message))
 	})
-	if err != nil {
-		t.Fatalf("Failed to subscribe to market ticker: %v", err)
+
+	// Test cases for different subscription types
+	var tickerReceived, klineReceived, depthReceived, tradesReceived bool
+	testCases := []struct {
+		name     string
+		subFunc  func() error
+		msgCh    chan struct{}
+	}{
+		{
+			name: "Market Ticker",
+			subFunc: func() error {
+				return manager.SubscribeMarketTicker(contractID, func(message []byte) {
+					t.Logf("Ticker message received: %s", string(message))
+					if !tickerReceived {
+						close(tickerMsgCh)
+						tickerReceived = true
+					}
+				})
+			},
+			msgCh: tickerMsgCh,
+		},
+		{
+			name: "KLine",
+			subFunc: func() error {
+				return manager.SubscribeKLine(contractID, "DAY_1", func(message []byte) {
+					t.Logf("KLine message received: %s", string(message))
+					if !klineReceived {
+						close(klineMsgCh)
+						klineReceived = true
+					}
+				})
+			},
+			msgCh: klineMsgCh,
+		},
+		{
+			name: "Depth",
+			subFunc: func() error {
+				return manager.SubscribeDepth(contractID, func(message []byte) {
+					t.Logf("Depth message received: %s", string(message))
+					if !depthReceived {
+						close(depthMsgCh)
+						depthReceived = true
+					}
+				})
+			},
+			msgCh: depthMsgCh,
+		},
+		{
+			name: "Trades",
+			subFunc: func() error {
+				return manager.SubscribeTrades(contractID, func(message []byte) {
+					t.Logf("Trades message received: %s", string(message))
+					if !tradesReceived {
+						close(tradesMsgCh)
+						tradesReceived = true
+					}
+				})
+			},
+			msgCh: tradesMsgCh,
+		},
 	}
 
-	// Wait for message or timeout
-	select {
-	case <-done:
-	case <-time.After(5 * time.Second):
-		t.Log("Timeout waiting for ticker message")
+	// Run each test case
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Subscribe to the channel
+			err := tc.subFunc()
+			if err != nil {
+				t.Fatalf("Failed to subscribe to %s: %v", tc.name, err)
+			}
+
+			// Wait for message or timeout
+			select {
+			case <-tc.msgCh:
+				t.Logf("%s message received successfully", tc.name)
+			case <-time.After(5 * time.Second):
+				t.Errorf("Timeout waiting for %s message", tc.name)
+			}
+		})
 	}
 
 	// Clean up
