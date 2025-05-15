@@ -151,7 +151,7 @@ func VerifyV3(hash []byte, pubkeyX, pubkeyY, r, s *big.Int) bool {
 	return x.Cmp(r) == 0
 }
 
-// 参考 https://github.com/apisit/rfc6979
+// Reference https://github.com/apisit/rfc6979
 func SignV3(privkey []byte, hash []byte) (*big.Int, *big.Int, error) {
 
 	hashInt := big.NewInt(0).SetBytes(hash)

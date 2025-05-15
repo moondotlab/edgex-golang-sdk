@@ -39,7 +39,7 @@ func loadCfgFromFile() {
 	}
 	defer filePtr.Close()
 
-	// 创建json解码器
+	// Create JSON decoder
 	decoder := json.NewDecoder(filePtr)
 	err = decoder.Decode(&cfg)
 	if err != nil {
@@ -55,7 +55,7 @@ func loadCfgFromData() {
 
 	dataBuffer := bytes.NewBuffer([]byte(starkcurveParams))
 
-	// 创建json解码器
+	// Create JSON decoder
 	decoder := json.NewDecoder(dataBuffer)
 	err := decoder.Decode(&cfg)
 	if err != nil {
@@ -68,7 +68,7 @@ func loadCfgFromData() {
 
 	dataBuffer1 := bytes.NewBuffer([]byte(constPointsParams))
 
-	// 创建json解码器
+	// Create JSON decoder
 	decoder1 := json.NewDecoder(dataBuffer1)
 	err = decoder1.Decode(&constPoints)
 	if err != nil {
@@ -150,7 +150,7 @@ func CalcHash(input []*big.Int) []byte {
 
 // }
 
-// 参考 https://github.com/apisit/rfc6979
+// Reference https://github.com/apisit/rfc6979
 func Sign(privkey []byte, hash []byte) (*big.Int, *big.Int, error) {
 
 	hashInt := big.NewInt(0).SetBytes(hash)
@@ -185,7 +185,7 @@ func Sign(privkey []byte, hash []byte) (*big.Int, *big.Int, error) {
 	return r, s, nil
 }
 
-// 参考 https://github.com/apisit/rfc6979
+// Reference https://github.com/apisit/rfc6979
 func Sign2(privkey []byte, hash []byte) (*big.Int, *big.Int, error) {
 
 	hashInt := big.NewInt(0).SetBytes(hash)

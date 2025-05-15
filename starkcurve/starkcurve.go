@@ -350,6 +350,7 @@ func (starkCurve *StarkCurve) ScalarBaseMult(k []byte) (*big.Int, *big.Int) {
 }
 
 //  一个优化点可以计算 g 2g 4g 8g ....的值，然后用add方法来计算，理论上可以减少计算量，进行一定的计算
+// An optimization point can calculate the values of g 2g 4g 8g...., and then use the add method to calculate, which theoretically can reduce the amount of calculation
 func (starkCurve *StarkCurve) ScalarBaseMultV2(k []byte) (*big.Int, *big.Int) {
 	seenFirstTrue := false
 	firstPos := len(k)*8 - 1
