@@ -377,3 +377,42 @@ func (c *Client) GetMaxOrderSize(ctx context.Context, contractID string, price f
 	}
 	return resp, nil
 }
+
+// GetOrder retrieves an order by either OrderId or ClientId
+func (c *Client) GetOrder(ctx context.Context, params *GetOrderParams) (*openapi.ResultListOrder, error) {
+	if params.OrderId != "" {
+		req := c.openapiClient.Class04OrderPrivateApiAPI.GetOrderById(ctx)
+		accountID := strconv.FormatInt(c.GetAccountID(), 10)
+
+		req = req.AccountId(accountID)
+		req = req.OrderIdList(params.OrderId)
+		resp, _, err := req.Execute()
+		if err != nil {
+			return nil, err
+		}
+		if resp.GetCode() != ResponseCodeSuccess {
+			if errorParam := resp.GetErrorParam(); errorParam != nil {
+				return nil, fmt.Errorf("request failed with error params: %v", errorParam)
+			}
+			return nil, fmt.Errorf("request failed with code: %s", resp.GetCode())
+		}
+		return resp, nil
+	} else if params.ClientId != "" {
+		req := c.openapiClient.Class04OrderPrivateApiAPI.GetOrderByClientOrderId(ctx)
+		accountID := strconv.FormatInt(c.GetAccountID(), 10)
+		req = req.AccountId(accountID)
+		req = req.ClientOrderIdList(params.ClientId)
+		resp, _, err := req.Execute()
+		if err != nil {
+			return nil, err
+		}
+		if resp.GetCode() != ResponseCodeSuccess {
+			if errorParam := resp.GetErrorParam(); errorParam != nil {
+				return nil, fmt.Errorf("request failed with error params: %v", errorParam)
+			}
+			return nil, fmt.Errorf("request failed with code: %s", resp.GetCode())
+		}
+		return resp, nil
+	}
+	return nil, fmt.Errorf("must provide either OrderId, ClientId")
+}

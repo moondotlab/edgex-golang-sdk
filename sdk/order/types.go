@@ -158,3 +158,10 @@ type OrderFillFilterParams struct {
 	OrderFilterParams
 	FilterOrderIdList []string // Filter by order IDs, empty means all orders
 }
+
+// GetOrderParams represents parameters for get orders
+type GetOrderParams struct {
+	OrderId    string // Order ID to get
+	ClientId   string // Client order ID to get
+	ContractId string // Contract ID for get all orders
+}
