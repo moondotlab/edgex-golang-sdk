@@ -19,19 +19,19 @@ import (
 
 // Client represents a WebSocket client
 type Client struct {
-	conn            *websocket.Conn
-	url             string
-	mu              sync.RWMutex
-	handlers        map[string]MessageHandler
-	done            chan struct{}
-	pingTicker      *time.Ticker
-	isPrivate       bool
-	subscriptions   map[string]struct{}
-	onConnectHooks  []func()
-	onMessageHooks  []func([]byte)
+	conn              *websocket.Conn
+	url               string
+	mu                sync.RWMutex
+	handlers          map[string]MessageHandler
+	done              chan struct{}
+	pingTicker        *time.Ticker
+	isPrivate         bool
+	subscriptions     map[string]struct{}
+	onConnectHooks    []func()
+	onMessageHooks    []func([]byte)
 	onDisconnectHooks []func(error)
-	accountID       int64
-	starkPriKey     string
+	accountID         int64
+	starkPriKey       string
 }
 
 // MessageHandler is a function type for handling WebSocket messages
@@ -47,13 +47,13 @@ type Message struct {
 // NewClient creates a new WebSocket client
 func NewClient(url string, isPrivate bool, accountID int64, starkPriKey string) *Client {
 	return &Client{
-		url:             url,
-		handlers:        make(map[string]MessageHandler),
-		done:            make(chan struct{}),
-		isPrivate:       isPrivate,
-		subscriptions:   make(map[string]struct{}),
-		accountID:       accountID,
-		starkPriKey:    starkPriKey,
+		url:           url,
+		handlers:      make(map[string]MessageHandler),
+		done:          make(chan struct{}),
+		isPrivate:     isPrivate,
+		subscriptions: make(map[string]struct{}),
+		accountID:     accountID,
+		starkPriKey:   starkPriKey,
 	}
 }
 
@@ -326,9 +326,9 @@ func (c *Client) OnDisconnect(hook func(error)) {
 
 // sendMessage sends a message through the WebSocket connection
 func (c *Client) sendMessage(msg interface{}) error {
-	c.mu.RLock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	conn := c.conn
-	c.mu.RUnlock()
 
 	if conn == nil {
 		return fmt.Errorf("WebSocket connection is not established")
